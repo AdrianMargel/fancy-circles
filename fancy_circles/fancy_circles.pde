@@ -1,4 +1,13 @@
-//based on the Nothing But Requiem logo
+/*
+  Fancy Circles
+  -------------
+  This program creates interesting looking circle designs. 
+ 
+  Press the space bar to export the current displayed results as an image with transparent background
+  
+  written by Adrian Margel, Summer 2019
+*/
+
 public class Vector {
   public float x;
   public float y;
@@ -55,8 +64,11 @@ public class Vector {
   }
 }
 
+//Node acts to hold a circle.
+//Node is used rather than just circle directly to make it easier to ass support for new shapes.
 class Node{
   Vector pos;
+  //unimplimented variable for animating rotation
   float rot;
   Circle target;
   Node(Vector p,Circle t,float r){
@@ -74,8 +86,9 @@ class Node{
     }
   }
 }
+
 class Line{
-  //connections
+  //connection points
   Node c1;
   Node c2;
   float thickness;
@@ -95,22 +108,26 @@ class Line{
     Vector realPos2=new Vector(rotPos2);
     realPos2.addVec(offset);
     
-    strokeWeight(thickness*zoom);
-    line(realPos1.x*zoom,realPos1.y*zoom,realPos2.x*zoom,realPos2.y*zoom);
+    img.strokeWeight(thickness*zoom*thickMulti);
+    img.line(realPos1.x*zoom,realPos1.y*zoom,realPos2.x*zoom,realPos2.y*zoom);
   }
 }
+
 class Circle{
   Vector pos;
   float size;
   float thickness;
   ArrayList<Circle> children;//holds real data of children
+  //unimplimented rotation animation variables
   float rot;
   float spin;
+  
   boolean visible;
   
   ArrayList<Node> special;//holds structural data about children;
   ArrayList<Line> lines;
   
+  //how wide any child circles are on the edge of the circle
   float cornerWide;
   Circle(Vector p, float s, float th,float sp){
     children=new ArrayList<Circle>();
@@ -149,8 +166,8 @@ class Circle{
       rotPos.rotVec(offRot);
       Vector realPos=new Vector(rotPos);
       realPos.addVec(offset);
-      strokeWeight(thickness*zoom);
-      ellipse(realPos.x*zoom,realPos.y*zoom,size*zoom,size*zoom);
+      img.strokeWeight(thickness*zoom*thickMulti);
+      img.ellipse(realPos.x*zoom,realPos.y*zoom,size*zoom,size*zoom);
       for(Circle child: children){
         child.display(realPos,rot+offRot);
       }
@@ -162,13 +179,16 @@ class Circle{
       }
     }
   }
+  
+  //generation method to create the circle
+  //this method's code is mostly arbirtary and was built to create aesthetically pleasing results
   void generate(int depth,boolean limited){
     if(size<100){
       return;
     }
     Circle centerSmall=null;
     float chance=0;
-    if(size>channel*2){
+    if(size>channel*channelMod){
       boolean birth=false;
       if(depth==1){
         chance=0.9;
@@ -196,9 +216,9 @@ class Circle{
       }
       if(random(0,1)<chance){
         if(limited){
-          children.add(new Circle(new Vector(0,0),random((size-channel*2)*0.5,(size-channel*2)*0.8),1.5,spin));
+          children.add(new Circle(new Vector(0,0),random((size-channel*channelMod)*0.5,(size-channel*channelMod)*0.8),1.5,spin));
         }else{
-          children.add(new Circle(new Vector(0,0),random((size-channel*2)*0.5,(size-channel*2)*0.8),2,spin));
+          children.add(new Circle(new Vector(0,0),random((size-channel*channelMod)*0.5,(size-channel*channelMod)*0.8),2,spin));
         }
         centerSmall=lastChild();
         birth=true;
@@ -312,39 +332,77 @@ class Circle{
       
     }
   }
+  
+  //creates a circle around this circle and it's children large enough to contain the entire shape.
   void contain(){
     float wide=size+cornerWide;
     children.add(new Circle(new Vector(0,0),wide,2,spin));
-    children.add(new Circle(new Vector(0,0),wide-channel/2,5,spin));
+    children.add(new Circle(new Vector(0,0),wide-channel/channelMod2,5,spin));
   }
+  
   Circle lastChild(){
     return children.get(children.size()-1);
   }
-  void genLast(int depth,boolean limited){
+  //generate the last child to be created
+  void genLast(int depth,boolean limited){ 
     children.get(children.size()-1).generate(depth+1,limited);
   }
 }
-float channel=40;
-Circle seed= new Circle(new Vector(0,0),600,2,0);
-float zoom=0.25;
-void setup(){
-  size(800,1000);
-  noFill();
-  background(255);
-}
+
+//variables to tweak some of the minor generation settings
+float channel=40;//40
+float channelMod=2;//2
+float channelMod2=1;//2
+float thickMulti=1;//1
+
+//the circle that will be used to display generated circles
+Circle seed;
+//initial display position for the seed
 float x=400;
 float y=400;
+
+//zoom
+float zoom=1/3f;
+//image to hold the circles, this allows for exporting images with tranparent backgrounds
+PGraphics img;
+
+void setup(){
+  size(800,1060);
+  img = createGraphics(800, 1060);
+}
 void draw(){
-  if(x*zoom>800){
-    x=400;
-    y+=800;
-  }
-  //background(255);
+  background(0);
+  
+  //regenerate the circle
   seed= new Circle(new Vector(0,0),600,2,0);
   seed.generate(1,false);
   seed.contain();
   
-  seed.move();
+  //unused method for doing animations
+  //seed.move();
+  
+  //display circle
+  img.beginDraw();
+  img.noFill();
+  img.stroke(255);
   seed.display(new Vector(x,y),0);
+  img.endDraw();
+  
+  //draw circle to the canvas
+  image(img, 0, 0);
+  
+  //change the circle's position
   x+=800;
+  if(x*zoom>800){
+    x=400;
+    y+=800;
+  }
+}
+
+//if space is pressed export an image
+void keyPressed(){
+  if(key==' '){
+    img.save("fancy_circles.png");
+    println("exported image");
+  }
 }
