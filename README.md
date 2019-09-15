@@ -3,4 +3,4 @@ This program generates visually interesting patterns based off circles. It was i
 
 ![circles](https://i.imgur.com/F5KMv80.png)
 
-The code was written summer late 2019.
+The code was written summer 2019.
